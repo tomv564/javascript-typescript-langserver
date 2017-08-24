@@ -125,6 +125,10 @@ export class InMemoryFileSystem extends EventEmitter implements ts.ParseConfigHo
 		return content;
 	}
 
+	addFile(path: string, content: string) {
+
+	}
+
 	/**
 	 * Tells if a file denoted by the given name exists in the workspace (does not have to be loaded)
 	 *
@@ -169,7 +173,19 @@ export class InMemoryFileSystem extends EventEmitter implements ts.ParseConfigHo
 			return content;
 		}
 
-		return typeScriptLibraries.get(path);
+		content = typeScriptLibraries.get(path);
+		if (content !== undefined) {
+			return content;
+		}
+
+		if (fs.existsSync(path)) {
+			this.logger.warn(`${path} was not pre-fetched, loading from disk.`);
+			content = fs.readFileSync(path, 'utf8')
+			const uri = path2uri(path);
+			this.add(uri, content);
+			return content
+		}
+		return undefined;
 	}
 
 	/**
