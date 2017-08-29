@@ -322,7 +322,7 @@ export class ProjectManager implements Disposable {
 			ignore.add(uri);
 			return this.ensureModuleStructure(span)
 				// If max depth was reached, don't go any further
-				.concat(Observable.defer(() => maxDepth === 0 ? Observable.empty<never>() : this.resolveReferencedFiles(uri)))
+				.concat(Observable.defer(() => maxDepth === 0 ? Observable.empty<never>() : traceObservable('resolveReferencedFiles', childOf, span => this.resolveReferencedFiles(uri, span))))
 				// Prevent cycles
 				.filter(referencedUri => !ignore.has(referencedUri))
 				// Call method recursively with one less dep level

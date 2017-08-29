@@ -166,6 +166,7 @@ export function getMatchingPropertyCount(query: any, value: any): number {
 	if (typeof value !== 'object' && value !== null) {
 		return 0;
 	}
+
 	// Both values are objects, compare each property and sum the scores
 	return Object.keys(query).reduce((score, key) => score + getMatchingPropertyCount(query[key], value[key]), 0);
 }

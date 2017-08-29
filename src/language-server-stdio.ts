@@ -20,7 +20,10 @@ program
 	.parse(process.argv);
 
 const logger = program.logfile ? new FileLogger(program.logfile) : new StderrLogger();
-const tracer = program.enableJaeger ? initTracer({ serviceName: 'javascript-typescript-langserver', sampler: { type: 'const', param: 1 } }) : new Tracer();
+const reporter = {
+	agentHost: '192.168.64.3'
+};
+const tracer = program.enableJaeger ? initTracer({ serviceName: 'jsts', sampler: { type: 'const', param: 1 }, reporter: reporter }) : new Tracer();
 
 const options: TypeScriptServiceOptions & MessageLogOptions & RegisterLanguageHandlerOptions = {
 	strict: program.strict,

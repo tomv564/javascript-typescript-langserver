@@ -986,67 +986,82 @@ export class TypeScriptService {
 	 *
 	 * @return Observable of JSON Patches that build a `CompletionList` result
 	 */
-	textDocumentCompletion(params: TextDocumentPositionParams, span = new Span()): Observable<Operation> {
+	textDocumentCompletion(params: TextDocumentPositionParams, childOf = new Span()): Observable<Operation> {
 		const uri = normalizeUri(params.textDocument.uri);
 
 		// Ensure files needed to suggest completions are fetched
-		return this.projectManager.ensureReferencedFiles(uri, undefined, undefined, span)
-			.toArray()
-			.mergeMap(() => {
+		// return this.projectManager.ensureReferencedFiles(uri, undefined, undefined, childOf)
+		// 	.toArray()
+		// 	.mergeMap(() => {
+			let completions: ts.CompletionInfo | undefined = undefined;
 
-				const fileName: string = uri2path(uri);
+			let span = childOf.tracer().startSpan('ensure/get sources', { childOf });
+			const fileName: string = uri2path(uri);
 
-				const configuration = this.projectManager.getConfiguration(fileName);
-				configuration.ensureBasicFiles(span);
+			const configuration = this.projectManager.getConfiguration(fileName);
+			// configuration.ensureBasicFiles(span);
 
-				const sourceFile = this._getSourceFile(configuration, fileName, span);
-				if (!sourceFile) {
-					return [];
-				}
+			const sourceFile = this._getSourceFile(configuration, fileName, span);
+			if (sourceFile) {
+				// return [];
+			// }
 
 				const offset: number = ts.getPositionOfLineAndCharacter(sourceFile, params.position.line, params.position.character);
-				const completions = configuration.getService().getCompletionsAtPosition(fileName, offset);
+				const lines = sourceFile.text.split(/\r?\n/);
+				const line = lines[params.position.line];
 
-				if (completions == null) {
-					return [];
-				}
+				span.finish();
+				span = childOf.tracer().startSpan('query completions', { childOf });
 
-				return Observable.from(completions.entries)
-					.map(entry =>  {
-						const item: CompletionItem = { label: entry.name };
+				this.logger.error(`getCompletions for ${fileName} contents "${line}" position ${params.position.character}`);
+				completions = configuration.getService().getCompletionsAtPosition(fileName, offset);
+			}
+			// if (completions == null) {
+			// 	return [];
+			// }
 
-						const kind = completionKinds[entry.kind];
-						if (kind) {
-							item.kind = kind;
-						}
-						if (entry.sortText) {
-							item.sortText = entry.sortText;
-						}
-						const details = configuration.getService().getCompletionEntryDetails(fileName, offset, entry.name);
-						if (details) {
-							item.documentation = ts.displayPartsToString(details.documentation);
-							item.detail = ts.displayPartsToString(details.displayParts);
-							if (this.supportsCompletionWithSnippets) {
-								item.insertTextFormat = InsertTextFormat.Snippet;
-								if (entry.kind === 'property') {
-									item.insertText = details.name;
-								} else {
-									const parameters = details.displayParts
-										.filter(p => p.kind === 'parameterName')
-										.map((p, i) => '${' + `${i + 1}:${p.text}` + '}');
-									const paramString = parameters.join(', ');
-									item.insertText = details.name + `(${paramString})`;
-								}
-							} else {
-								item.insertTextFormat = InsertTextFormat.PlainText;
-								item.insertText = details.name;
-							}
-						}
-						return { op: 'add', path: '/items/-', value: item } as Operation;
-					})
-					.startWith({ op: 'add', path: '/isIncomplete', value: false } as Operation);
-			})
-			.startWith({ op: 'add', path: '', value: { isIncomplete: true, items: [] } as CompletionList } as Operation);
+			span.finish();
+
+
+			// TODO: also track this observable
+			return traceObservable('entry details + convert', childOf, span => Observable.from(completions ? completions.entries : [])
+				.map(entry =>  {
+					const item: CompletionItem = { label: entry.name };
+
+					const kind = completionKinds[entry.kind];
+					if (kind) {
+						item.kind = kind;
+					}
+					if (entry.sortText) {
+						item.sortText = entry.sortText;
+					}
+
+
+					// const details = configuration.getService().getCompletionEntryDetails(fileName, offset, entry.name);
+					// if (details) {
+					// 	item.documentation = ts.displayPartsToString(details.documentation);
+					// 	item.detail = ts.displayPartsToString(details.displayParts);
+					// 	if (this.supportsCompletionWithSnippets) {
+					// 		item.insertTextFormat = InsertTextFormat.Snippet;
+					// 		if (entry.kind === 'function' || entry.kind === 'method') {
+					// 			const parameters = details.displayParts
+					// 				.filter(p => p.kind === 'parameterName')
+					// 				.map((p, i) => '${' + `${i + 1}:${p.text}` + '}');
+					// 			const paramString = parameters.join(', ');
+					// 			item.insertText = details.name + `(${paramString})`;
+					// 		} else {
+					// 			item.insertText = details.name;
+					// 		}
+					// 	} else {
+					// 		item.insertTextFormat = InsertTextFormat.PlainText;
+					// 		item.insertText = details.name;
+					// 	}
+					// }
+					return { op: 'add', path: '/items/-', value: item } as Operation;
+				}))
+			// 		.startWith({ op: 'add', path: '/isIncomplete', value: false } as Operation));
+			// })
+			.startWith({ op: 'add', path: '', value: { isIncomplete: false, items: [] } as CompletionList } as Operation);
 	}
 
 	/**
