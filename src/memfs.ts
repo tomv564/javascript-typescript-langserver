@@ -137,7 +137,8 @@ export class InMemoryFileSystem extends EventEmitter implements ts.ParseConfigHo
      */
     public fileExists(path: string): boolean {
         const uri = path2uri(path)
-        return this.overlay.has(uri) || this.files.has(uri) || typeScriptLibraries.has(path)
+        const existsInCache = this.overlay.has(uri) || this.files.has(uri) || typeScriptLibraries.has(path)
+        return existsInCache || fs.existsSync(path)
     }
 
     /**
@@ -174,7 +175,19 @@ export class InMemoryFileSystem extends EventEmitter implements ts.ParseConfigHo
             return content
         }
 
-        return typeScriptLibraries.get(path)
+        content = typeScriptLibraries.get(path)
+        if (content !== undefined) {
+            return content
+        }
+
+        if (fs.existsSync(path)) {
+            // this.logger.warn(`${path} was not pre-fetched, loading from disk.`)
+            content = fs.readFileSync(path, 'utf8')
+            const uri = path2uri(path)
+            this.add(uri, content)
+            return content
+        }
+        return undefined
     }
 
     /**
