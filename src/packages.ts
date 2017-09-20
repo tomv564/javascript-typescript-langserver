@@ -149,11 +149,11 @@ export class PackageManager extends EventEmitter implements Disposable {
 	 * @return Observable that emits a single PackageJson or never
 	 */
 	getClosestPackageJson(uri: string, span = new Span()): Observable<PackageJson> {
-		return this.updater.ensureStructure()
+		return (this.updater.ensureStructure() as Observable<PackageJson>)
 			.concat(Observable.defer(() => {
 				const packageJsonUri = this.getClosestPackageJsonUri(uri);
 				if (!packageJsonUri) {
-					return Observable.empty<never>();
+					return Observable.empty<PackageJson>();
 				}
 				return this.getPackageJson(packageJsonUri, span);
 			}));
