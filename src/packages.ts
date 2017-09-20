@@ -96,7 +96,7 @@ export class PackageManager extends EventEmitter implements Disposable {
 		let rootPackageJsonLevel = Infinity;
 		// Find locations of package.jsons _not_ inside node_modules
 		this.subscriptions.add(
-			Observable.fromEvent<[string, string]>(this.inMemoryFileSystem, 'add', Array.of)
+			Observable.fromEvent<[string, string]>(this.inMemoryFileSystem, 'add')
 				.subscribe(([uri, content]) => {
 					const parts = url.parse(uri);
 					if (!parts.pathname	|| !parts.pathname.endsWith('/package.json') || parts.pathname.includes('/node_modules/')) {
@@ -132,7 +132,7 @@ export class PackageManager extends EventEmitter implements Disposable {
 
 	/** Emitted when a new package.json was found and parsed */
 	on(event: 'parsed', listener: (uri: string, packageJson: PackageJson) => void): this;
-	on(event: string, listener: () => void): this {
+	on(event: string, listener: (...args: any[]) => void): this {
 		return super.on(event, listener);
 	}
 
@@ -193,7 +193,7 @@ export class PackageManager extends EventEmitter implements Disposable {
 	 * @return The found package.json or undefined if none found
 	 */
 	getClosestPackageJsonUri(uri: string): string | undefined {
-		const parts = url.parse(uri);
+		const parts: url.UrlObject = url.parse(uri);
 		while (true) {
 			if (!parts.pathname) {
 				return undefined;
