@@ -80,9 +80,9 @@ export class MessageEmitter extends EventEmitter {
 	/** Emitted when the underlying input stream emitted an error */
 	on(event: 'error', listener: (error: Error) => void): this;
 	/** Emitted when the underlying input stream was closed */
-	on(event: 'close', listener: () => void): this;
+	on(event: 'close', listener: (arg?: any) => void): this;
 	/* istanbul ignore next */
-	on(event: string, listener: () => void): this {
+	on(event: string, listener: (arg?: any) => void): this {
 		return super.on(event, listener);
 	}
 
@@ -91,9 +91,9 @@ export class MessageEmitter extends EventEmitter {
 	/** Emitted when the underlying input stream emitted an error */
 	once(event: 'error', listener: (error: Error) => void): this;
 	/** Emitted when the underlying input stream was closed */
-	once(event: 'close', listener: () => void): this;
+	once(event: 'close', listener: (arg?: any) => void): this;
 	/* istanbul ignore next */
-	once(event: string, listener: () => void): this {
+	once(event: string, listener: (arg?: any) => void): this {
 		return super.on(event, listener);
 	}
 }
