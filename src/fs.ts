@@ -106,12 +106,12 @@ export class FileSystemUpdater {
 	/**
 	 * Observable for a pending or completed structure fetch
 	 */
-	private structureFetch?: Observable<never>;
+	private structureFetch?: Observable<string>;
 
 	/**
 	 * Map from URI to Observable of pending or completed content fetch
 	 */
-	private fetches = new Map<string, Observable<never>>();
+	private fetches = new Map<string, Observable<string>>();
 
 	/**
 	 * Limits concurrent fetches to not fetch thousands of files in parallel
@@ -127,7 +127,7 @@ export class FileSystemUpdater {
 	 * @param childOf A parent span for tracing
 	 * @return Observable that completes when the fetch is finished
 	 */
-	fetch(uri: string, childOf = new Span()): Observable<never> {
+	fetch(uri: string, childOf = new Span()): Observable<string> {
 		// Limit concurrent fetches
 		const observable = Observable.fromPromise(this.concurrencyLimit.wait())
 			.mergeMap(() => this.remoteFs.getTextDocumentContent(uri))
@@ -152,7 +152,7 @@ export class FileSystemUpdater {
 	 * @param childOf An OpenTracing span for tracing
 	 * @return Observable that completes when the file was fetched
 	 */
-	ensure(uri: string, childOf = new Span()): Observable<never> {
+	ensure(uri: string, childOf = new Span()): Observable<string> {
 		return traceObservable('Ensure content', childOf, span => {
 			span.addTags({ uri });
 			return this.fetches.get(uri) || this.fetch(uri, span);
@@ -164,7 +164,7 @@ export class FileSystemUpdater {
 	 *
 	 * @param childOf A parent span for tracing
 	 */
-	fetchStructure(childOf = new Span()): Observable<never> {
+	fetchStructure(childOf = new Span()): Observable<string> {
 		const observable = traceObservable('Fetch workspace structure', childOf, span =>
 			this.remoteFs.getWorkspaceFiles(undefined, span)
 				.do(uri => {
@@ -186,7 +186,7 @@ export class FileSystemUpdater {
 	 *
 	 * @param span An OpenTracing span for tracing
 	 */
-	ensureStructure(childOf = new Span()): Observable<never> {
+	ensureStructure(childOf = new Span()): Observable<string> {
 		return traceObservable('Ensure structure', childOf, span => {
 			return this.structureFetch || this.fetchStructure(span);
 		});
