@@ -1826,26 +1826,26 @@ export function describeTypeScriptService(createService: TypeScriptServiceFactor
 						character: 16
 					}
 				}).reduce<Operation, Location[]>(applyReducer, null as any).toPromise(), [{
-					uri: 'git://github.com/Microsoft/TypeScript?v' + ts.version + '#lib/lib.dom.d.ts',
+					uri: 'git://github.com/Microsoft/TypeScript?v' + ts.version + '#lib/lib.d.ts',
 					range: {
 						start: {
-							line: 8258,
+							line: 12323,
 							character: 10
 						},
 						end: {
-							line: 8258,
+							line: 12323,
 							character: 14
 						}
 					}
 				}, {
-					uri: 'git://github.com/Microsoft/TypeScript?v' + ts.version + '#lib/lib.dom.d.ts',
+					uri: 'git://github.com/Microsoft/TypeScript?v' + ts.version + '#lib/lib.d.ts',
 					range: {
 						start: {
-							line: 8310,
+							line: 12375,
 							character: 12
 						},
 						end: {
-							line: 8310,
+							line: 12375,
 							character: 16
 						}
 					}
