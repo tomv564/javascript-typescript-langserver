@@ -453,11 +453,11 @@ export class TypeScriptService {
 				// The symbol is part of a dependency in node_modules
 				// Build URI to package.json of the Dependency
 				const encodedPackageName = packageName.split('/').map(encodeURIComponent).join('/');
-				const parts = url.parse(uri);
+				const parts: url.UrlObject = url.parse(uri);
 				const packageJsonUri = url.format({ ...parts, pathname: parts.pathname!.slice(0, parts.pathname!.lastIndexOf('/node_modules/' + encodedPackageName)) + `/node_modules/${encodedPackageName}/package.json` });
 				// Fetch the package.json of the dependency
 				return this.updater.ensure(packageJsonUri, span)
-					.concat(Observable.defer((): Observable<PackageDescriptor> => {
+					.mergeMap(() => Observable.defer((): Observable<PackageDescriptor> => {
 						const packageJson: PackageJson = JSON.parse(this.inMemoryFileSystem.getContent(packageJsonUri));
 						const { name, version } = packageJson;
 						if (!name) {
@@ -671,10 +671,10 @@ export class TypeScriptService {
 					const packageRootUri = normRootUri + params.symbol.package.name.substr(1) + '/';
 
 					return this.updater.ensureStructure(span)
-						.concat(Observable.defer(() => observableFromIterable(this.inMemoryFileSystem.uris())))
+						.mergeMap(() => Observable.defer(() => observableFromIterable(this.inMemoryFileSystem.uris())))
 						.filter(uri => uri.startsWith(packageRootUri))
 						.mergeMap(uri => this.updater.ensure(uri, span))
-						.concat(Observable.defer(() => {
+						.mergeMap(() => Observable.defer(() => {
 							span.log({ event: 'fetched package files' });
 							const config = this.projectManager.getParentConfiguration(packageRootUri, 'ts');
 							if (!config) {
@@ -687,7 +687,7 @@ export class TypeScriptService {
 				// Regular workspace symbol search
 				// Search all symbols in own code, but not in dependencies
 				return this.projectManager.ensureOwnFiles(span)
-					.concat(Observable.defer(() => {
+					.mergeMap(() => Observable.defer(() => {
 						if (params.symbol && params.symbol.package && params.symbol.package.name) {
 							// If SymbolDescriptor query with PackageDescriptor, search for package.jsons with matching package name
 							return observableFromIterable(this.packageManager.packageJsonUris())
@@ -1245,7 +1245,7 @@ export class TypeScriptService {
 		const uri = normalizeUri(params.textDocument.uri);
 		const editUris = new Set<string>();
 		return this.projectManager.ensureOwnFiles(span)
-			.concat(Observable.defer(() => {
+			.concat(() => Observable.defer(() => {
 
 				const filePath = uri2path(uri);
 				const configuration = this.projectManager.getParentConfiguration(params.textDocument.uri);
