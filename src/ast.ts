@@ -143,7 +143,7 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 		}
 		case ts.SyntaxKind.TypeLiteral: {
 			const n = node as ts.TypeLiteralNode;
-			pushall(children, n.name);
+			pushall(children);
 			children.push(...n.members);
 			break;
 		}
@@ -206,7 +206,7 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 		}
 		case ts.SyntaxKind.CallExpression: {
 			const n = node as ts.CallExpression;
-			pushall(children, n.name, n.expression, ...n.arguments);
+			pushall(children, n.expression, ...n.arguments);
 			if (n.typeArguments) {
 				children.push(...n.typeArguments);
 			}
@@ -214,9 +214,6 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 		}
 		case ts.SyntaxKind.NewExpression: {
 			const n = node as ts.NewExpression;
-			if (n.name) {
-				yield* walkMostAST(n.name);
-			}
 			yield* walkMostAST(n.expression);
 			if (n.arguments) {
 				for (const argument of n.arguments) {
@@ -637,7 +634,9 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 		}
 		case ts.SyntaxKind.CatchClause: {
 			const n = node as ts.CatchClause;
-			children.push(n.variableDeclaration, n.block);
+			if (n.variableDeclaration) {
+				children.push(n.variableDeclaration, n.block);
+			}
 			break;
 		}
 		case ts.SyntaxKind.PropertyAssignment: {
@@ -665,21 +664,6 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 			children.push(n.type);
 			break;
 		}
-		case ts.SyntaxKind.JSDocArrayType: {
-			const n = node as ts.JSDocArrayType;
-			children.push(n.elementType);
-			break;
-		}
-		case ts.SyntaxKind.JSDocUnionType: {
-			const n = node as ts.JSDocUnionType;
-			children.push(...n.types);
-			break;
-		}
-		case ts.SyntaxKind.JSDocTupleType: {
-			const n = node as ts.JSDocTupleType;
-			children.push(...n.types);
-			break;
-		}
 		case ts.SyntaxKind.JSDocNullableType: {
 			const n = node as ts.JSDocNullableType;
 			children.push(n.type);
@@ -687,26 +671,6 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 		}
 		case ts.SyntaxKind.JSDocNonNullableType: {
 			const n = node as ts.JSDocNonNullableType;
-			children.push(n.type);
-			break;
-		}
-		case ts.SyntaxKind.JSDocRecordType: {
-			const n = node as ts.JSDocRecordType;
-			children.push(n.literal);
-			break;
-		}
-		case ts.SyntaxKind.JSDocRecordMember: {
-			const n = node as ts.JSDocRecordMember;
-			pushall(children, n.name, n.type, n.initializer);
-			break;
-		}
-		case ts.SyntaxKind.JSDocTypeReference: {
-			const n = node as ts.JSDocTypeReference;
-			children.push(n.name, ...n.typeArguments);
-			break;
-		}
-		case ts.SyntaxKind.JSDocOptionalType: {
-			const n = node as ts.JSDocOptionalType;
 			children.push(n.type);
 			break;
 		}
@@ -720,16 +684,6 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 		}
 		case ts.SyntaxKind.JSDocVariadicType: {
 			const n = node as ts.JSDocVariadicType;
-			children.push(n.type);
-			break;
-		}
-		case ts.SyntaxKind.JSDocConstructorType: {
-			const n = node as ts.JSDocConstructorType;
-			children.push(n.type);
-			break;
-		}
-		case ts.SyntaxKind.JSDocThisType: {
-			const n = node as ts.JSDocThisType;
 			children.push(n.type);
 			break;
 		}
@@ -747,10 +701,7 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 		}
 		case ts.SyntaxKind.JSDocParameterTag: {
 			const n = node as ts.JSDocParameterTag;
-			pushall(children, n.typeExpression, n.postParameterName, n.parameterName);
-			if (n.preParameterName) {
-				children.push(n.preParameterName);
-			}
+			pushall(children, n.typeExpression);
 			break;
 		}
 		case ts.SyntaxKind.JSDocReturnTag: {
@@ -770,7 +721,7 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 		}
 		case ts.SyntaxKind.JSDocTypedefTag: {
 			const n = node as ts.JSDocTypedefTag;
-			pushall(children, n.fullName, n.typeExpression, n.jsDocTypeLiteral);
+			pushall(children, n.fullName, n.typeExpression);
 			if (n.name) {
 				children.push(n.name);
 			}
@@ -789,11 +740,6 @@ export function *walkMostAST(node: ts.Node): IterableIterator<ts.Node> {
 			if (n.jsDocTypeTag) {
 				children.push(n.jsDocTypeTag);
 			}
-			break;
-		}
-		case ts.SyntaxKind.JSDocLiteralType: {
-			const n = node as ts.JSDocLiteralType;
-			children.push(n.literal);
 			break;
 		}
 		case ts.SyntaxKind.SyntaxList: {
