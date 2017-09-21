@@ -72,17 +72,17 @@ export class ProjectManager implements Disposable {
 	 * Flag indicating that we fetched module struture (tsconfig.json, jsconfig.json, package.json files) from the remote file system.
 	 * Without having this information we won't be able to split workspace to sub-projects
 	 */
-	private ensuredModuleStructure?: Observable<never>;
+	private ensuredModuleStructure?: Observable<string>;
 
 	/**
 	 * Observable that completes when `ensureAllFiles` completed
 	 */
-	private ensuredAllFiles?: Observable<never>;
+	private ensuredAllFiles?: Observable<string>;
 
 	/**
 	 * Observable that completes when `ensureOwnFiles` completed
 	 */
-	private ensuredOwnFiles?: Observable<never>;
+	private ensuredOwnFiles?: Observable<string>;
 
 	/**
 	 * A URI Map from file to files referenced by the file, so files only need to be pre-processed once
@@ -146,7 +146,7 @@ export class ProjectManager implements Disposable {
 
 		// Whenever a file with content is added to the InMemoryFileSystem, check if it's a tsconfig.json and add a new ProjectConfiguration
 		this.subscriptions.add(
-			Observable.fromEvent<[string, string]>(inMemoryFileSystem, 'add', Array.of)
+			Observable.fromEvent<[string, string]>(inMemoryFileSystem, 'add')
 				.filter(([uri, content]) => !!content && /\/[tj]sconfig\.json/.test(uri) && !uri.includes('/node_modules/'))
 				.subscribe(([uri, content]) => {
 					const filePath = uri2path(uri);
@@ -221,7 +221,7 @@ export class ProjectManager implements Disposable {
 	 * filesystem layout, global*.d.ts and package.json files.
 	 * Then creates new ProjectConfigurations, resets existing and invalidates file references.
 	 */
-	ensureModuleStructure(childOf = new Span()): Observable<never> {
+	ensureModuleStructure(childOf = new Span()): Observable<string> {
 		return traceObservable('Ensure module structure', childOf, span => {
 			if (!this.ensuredModuleStructure) {
 				this.ensuredModuleStructure = this.updater.ensureStructure()
@@ -261,7 +261,7 @@ export class ProjectManager implements Disposable {
 	 * This includes all js/ts files, tsconfig files and package.json files.
 	 * Invalidates project configurations after execution
 	 */
-	ensureOwnFiles(childOf = new Span()): Observable<never> {
+	ensureOwnFiles(childOf = new Span()): Observable<string> {
 		return traceObservable('Ensure own files', childOf, span => {
 			if (!this.ensuredOwnFiles) {
 				this.ensuredOwnFiles = this.updater.ensureStructure(span)
@@ -282,7 +282,7 @@ export class ProjectManager implements Disposable {
 	 * Ensures all files were fetched from the remote file system.
 	 * Invalidates project configurations after execution
 	 */
-	ensureAllFiles(childOf = new Span()): Observable<never> {
+	ensureAllFiles(childOf = new Span()): Observable<string> {
 		return traceObservable('Ensure all files', childOf, span => {
 			if (!this.ensuredAllFiles) {
 				this.ensuredAllFiles = this.updater.ensureStructure(span)
