@@ -67,3 +67,32 @@ describe('plugins', () => {
 
     })
 })
+
+describe('it should really load the plugin', () => {
+    it.only('loads from global package location', () => {
+        const memfs = new InMemoryFileSystem('/')
+        const peerPackagesPath = path.resolve(__filename, '../../../../')
+        const peerPackagesUri = path2uri(peerPackagesPath)
+        memfs.add(peerPackagesUri + '/node_modules/some-plugin/package.json', '{ "name": "some-plugin", "version": "0.1.1", "main": "plugin.js"}')
+        memfs.add(peerPackagesUri + '/node_modules/some-plugin/plugin.js', '')
+        const pluginSettings: PluginSettings = {
+            globalPlugins: ['tslint-language-service'],
+            allowLocalPluginLoads: false,
+            pluginProbeLocations: ['/usr/local/lib/']
+        }
+        const pluginOption: ts.PluginImport = {
+            name: 'tslint-language-service'
+        }
+        const compilerOptions: ts.CompilerOptions = {
+            plugins: [pluginOption]
+        }
+
+        const loader = new PluginLoader('/', memfs, pluginSettings, undefined)
+        const applyProxy = sinon.spy()
+        loader.loadPlugins(compilerOptions, applyProxy)
+        sinon.assert.calledOnce(applyProxy)
+        // sinon.assert.calledWithExactly(applyProxy, pluginFactoryFunc, sinon.match(pluginOption))
+
+        // loader.loadPlugins(options, applyProxy, pluginModuleFactory, pluginConfigEntry)
+    })
+})

@@ -65,7 +65,7 @@ export type ServerHost = object
 /**
  * The result of a node require: a module or an error.
  */
-type RequireResult = { module: {}, error: undefined } | { module: undefined, error: {} }
+type RequireResult = { module: {}, error: undefined } | { module: undefined, error: Error }
 
 export class PluginLoader {
 
@@ -91,11 +91,9 @@ export class PluginLoader {
         // Search our peer node_modules, then any globally-specified probe paths
         // ../../.. to walk from X/node_modules/javascript-typescript-langserver/lib/project-manager.js to X/node_modules/
         const searchPaths = [combinePaths(__filename, '../../..'), ...this.pluginProbeLocations]
-
         // Corresponds to --allowLocalPluginLoads, opt-in to avoid remote code execution.
         if (this.allowLocalPluginLoads) {
             const local = this.rootFilePath
-            this.logger.info(`Local plugin loading enabled; adding ${local} to search paths`)
             searchPaths.unshift(local)
         }
 
@@ -132,7 +130,7 @@ export class PluginLoader {
      */
     private enablePlugin(pluginConfigEntry: ts.PluginImport, searchPaths: string[], enableProxy: EnableProxyFunc): void {
         for (const searchPath of searchPaths) {
-            const resolvedModule =  this.resolveModule(pluginConfigEntry.name, searchPath) as PluginModuleFactory
+            const resolvedModule = this.resolveModule(pluginConfigEntry.name, searchPath) as PluginModuleFactory
             if (resolvedModule) {
                 enableProxy(resolvedModule, pluginConfigEntry)
                 return
@@ -148,10 +146,11 @@ export class PluginLoader {
      */
     private resolveModule(moduleName: string, initialDir: string): {} | undefined {
         const resolvedPath = toUnixPath(path.resolve(combinePaths(initialDir, 'node_modules')))
-        this.logger.info(`Loading ${moduleName} from ${initialDir} (resolved to ${resolvedPath})`)
+        // this.logger.info(`Loading ${moduleName} from ${initialDir} (resolved to ${resolvedPath})`)
         const result = this.requirePlugin(resolvedPath, moduleName)
         if (result.error) {
-            this.logger.error(`Failed to load module: ${JSON.stringify(result.error)}`)
+            // this logging is not useful, we expect to fail trying a few paths.
+            // this.logger.error(`Failed to load module: ${result.error.message}`)
             return undefined
         }
         return result.module
@@ -163,10 +162,17 @@ export class PluginLoader {
      * @param moduleName
      */
     private requirePlugin(initialDir: string, moduleName: string): RequireResult {
+        let modulePath = ''
         try {
-            const modulePath = this.resolveJavaScriptModule(moduleName, initialDir, this.fs)
+            modulePath = this.resolveJavaScriptModule(moduleName, initialDir, this.fs)
+        } catch (error) {
+            return { module: undefined, error }
+        }
+
+        try {
             return { module: this.requireModule(modulePath), error: undefined }
         } catch (error) {
+            this.logger.error(`Failed to require module ${modulePath}: ${error.message}`)
             return { module: undefined, error }
         }
     }
