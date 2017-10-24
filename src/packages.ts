@@ -120,13 +120,12 @@ export class PackageManager extends EventEmitter implements Disposable {
                         try {
                             parsed = JSON.parse(content)
                         } catch (err) {
-                            logger.error(`Error parsing package.json:`, err)
+                            this.logger.error(`Error parsing package.json:`, err)
                         }
                     }
                     // Don't override existing content with undefined
                     if (parsed || !this.packages.get(uri)) {
                         this.packages.set(uri, parsed)
-                        // this.logger.log(`Found package ${uri}`)
                         this.emit('parsed', uri, parsed)
                     }
                     // If the current root package.json is further nested than this one, replace it
