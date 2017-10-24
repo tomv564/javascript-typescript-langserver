@@ -1,7 +1,6 @@
 
 import * as ts from 'typescript'
 import { SymbolInformation, SymbolKind } from 'vscode-languageserver-types'
-import { isTypeScriptLibrary } from './memfs'
 import { SymbolDescriptor } from './request-type'
 import { path2uri, toUnixPath } from './util'
 
@@ -32,13 +31,9 @@ export function definitionInfoToSymbolDescriptor(info: ts.DefinitionInfo, rootPa
 }
 
 /**
- * Transforms definition's file name to URI. If definition belongs to the in-memory TypeScript library,
- * returns git://github.com/Microsoft/TypeScript URL, otherwise returns file:// one
+ * Transforms definition's file name to URI.
  */
 export function locationUri(filePath: string): string {
-    if (isTypeScriptLibrary(filePath)) {
-        return 'git://github.com/Microsoft/TypeScript?v' + ts.version + '#lib/' + filePath.split(/[\/\\]/g).pop()
-    }
     return path2uri(filePath)
 }
 
